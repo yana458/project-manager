@@ -16,17 +16,29 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
-                        Clientes
-                    </x-nav-link>
+                   @can('users.view')
+                        <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
+                            Users
+                        </x-nav-link>
+                    @endcan
 
-                    <x-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')">
-                        Proyectos
-                    </x-nav-link>
+                    @can('clients.view')
+                        <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
+                            Clients
+                        </x-nav-link>
+                    @endcan
 
-                    <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
-                        Usuarios
-                    </x-nav-link>
+                    @can('projects.view')
+                        <x-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')">
+                            Projects
+                        </x-nav-link>
+                    @endcan
+
+                    @can('services.view')
+                        <x-nav-link :href="route('services.index')" :active="request()->routeIs('services.*')">
+                            Services
+                        </x-nav-link>
+                    @endcan
                 </div>
             </div>
 
