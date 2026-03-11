@@ -7,16 +7,17 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles;
+
+    public const DEPARTMENTS = ['development', 'marketing', 'design'];
 
     protected $fillable = [
         'name',
         'email',
         'password',
+        'department',
         'is_active',
     ];
 
