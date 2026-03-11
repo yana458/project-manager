@@ -49,6 +49,16 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        $user = Auth::user(); 
+
+        if ($user && !$user->is_active) {
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'Your account is disabled.',
+            ]);
+        }
+        
         RateLimiter::clear($this->throttleKey());
     }
 
