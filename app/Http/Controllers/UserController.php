@@ -100,6 +100,33 @@ class UserController extends Controller
         return redirect()->route('users.show', $user)->with('success', 'User updated.');
     }
 
+    public function activate(User $user)
+    {
+        if ($user->is_active) {
+            return back()->with('success', 'User is already active.');
+        }
+
+        $user->update(['is_active' => true]);
+
+        return redirect()->route('users.index')->with('success', 'User activated.');
+    }
+
+    public function assignRole(Request $request, User $user)
+    {
+        // No permitir cambiar tu propio rol
+        if ($user->id === Auth::id()) {
+            return back()->with('error', 'You cannot change your own role.');
+        }
+
+        $validated = $request->validate([
+            'role' => ['required', Rule::in(['admin', 'senior', 'junior', 'intern'])],
+        ]);
+
+        $user->syncRoles([$validated['role']]);
+
+        return redirect()->route('users.show', $user)->with('success', 'Role updated.');
+    }
+
     public function deactivate(User $user)
     {
         if ($user->id === Auth::id()) {
@@ -108,6 +135,6 @@ class UserController extends Controller
 
         $user->update(['is_active' => false]);
 
-        return redirect()->route('users.index')->with('success', 'User deactivated.');
+        return redirect()->route('users.show')->with('success', 'User deactivated.');
     }
 }
