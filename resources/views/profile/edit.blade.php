@@ -19,11 +19,14 @@
                 </div>
             </div>
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.delete-user-form')
+            @unless(auth()->user()->hasRole('admin'))
+                <div class="mt-6 rounded-xl border bg-white p-4">
+                    <h3 class="text-base font-semibold text-gray-900">Account</h3>
+                    <p class="mt-1 text-sm text-gray-600">
+                        If you need to deactivate your account, please contact an administrator.
+                    </p>
                 </div>
-            </div>
+            @endunless
         </div>
     </div>
 </x-app-layout>
