@@ -63,6 +63,15 @@
                                                 </button>
                                             </form>
                                         @endif
+                                        @if(!$u->is_active)
+                                            <form class="inline" method="POST" action="{{ route('users.activate', $u) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button class="underline text-green-700" onclick="return confirm('Activate this user?')">
+                                                    Activate
+                                                </button>
+                                            </form>
+                                        @endif
                                     @endcan
                                 </td>
                             </tr>
