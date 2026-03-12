@@ -20,15 +20,15 @@ Route::middleware(['auth'])->group(function () {
     })->name('dashboard');
 
     // Placeholders (por ahora apuntan al dashboard)
-    Route::get('/clients', fn () => view('dashboard'))
+    Route::get('/clients', fn () => redirect()->route('dashboard'))
         ->middleware('permission:clients.view')
         ->name('clients.index');
 
-    Route::get('/projects', fn () => view('dashboard'))
+    Route::get('/projects', fn () => redirect()->route('dashboard'))
         ->middleware('permission:projects.view')
         ->name('projects.index');
 
-    Route::get('/services', fn () => view('dashboard'))
+    Route::get('/services', fn () => redirect()->route('dashboard'))
         ->middleware('permission:services.view')
         ->name('services.index');
 
