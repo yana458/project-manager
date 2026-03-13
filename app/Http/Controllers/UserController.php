@@ -37,7 +37,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'department' => ['required', Rule::in(User::DEPARTMENTS)],
-            'role' => ['required', Rule::in(['admin','senior','junior','intern'])],
+            'role' => ['required', Rule::in($this->assignableRoles())],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
@@ -48,7 +48,7 @@ class UserController extends Controller
             'password' => Hash::make($validated['password']),
             'is_active' => true,
         ]);
-        $user->assignRole($validated['role']);
+        $user->syncRoles([$validated['role']]);
 
         // Default de asignar el rol 'junior' a los nuevos usuarios, a menos que ya tengan un rol asignado
         if (method_exists($user, 'assignRole') && !$user->hasAnyRole(['admin','senior','junior','intern'])) {
@@ -61,17 +61,27 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $departments = User::DEPARTMENTS;
-        $roles = ['admin', 'senior', 'junior', 'intern'];
-        return view('users.edit', compact('user', 'departments', 'roles'));
+        $rolesAllowed = $this->assignableRoles();
+        return view('users.edit', compact('user', 'departments', 'rolesAllowed'));
     }
 
     public function update(Request $request, User $user)
     {
+        // No permitir cambiar tu propio rol (opcional, recomendado)
+        $editingSelf = ($user->id === Auth::id());
+
+        // Si el usuario objetivo es privilegiado (admin/superadmin), solo superadmin puede editar su rol/estado
+        if ($this->isPrivileged($user) && !Auth::user()?->hasRole('superadmin')) {
+            return back()->with('error', 'Only superadmin can manage admin accounts.');
+        }
+
+        $rolesAllowed = $this->assignableRoles();
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'department' => ['required', Rule::in(User::DEPARTMENTS)],
-            'role' => ['required', Rule::in(['admin','senior','junior','intern'])],
+            'role' => [$editingSelf ? 'nullable' : 'required', Rule::in($rolesAllowed)],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
 
@@ -100,8 +110,26 @@ class UserController extends Controller
         return redirect()->route('users.show', $user)->with('success', 'User updated.');
     }
 
+       private function assignableRoles(): array
+    {
+        if (Auth::user() && Auth::user()->hasRole('superadmin')) {
+            return ['admin', 'senior', 'junior', 'intern'];
+        }
+
+        return ['senior', 'junior', 'intern'];
+    }
+
+        private function isPrivileged(User $user): bool
+    {
+        return $user->hasAnyRole(['superadmin', 'admin']);
+    }
+
     public function activate(User $user)
     {
+        if ($this->isPrivileged($user) && !Auth::user()->hasRole('superadmin')) {
+            return back()->with('error', 'Only superadmin can activate admin accounts.');  
+        }
+
         if ($user->is_active) {
             return back()->with('success', 'User is already active.');
         }
@@ -113,12 +141,18 @@ class UserController extends Controller
 
     public function assignRole(Request $request, User $user)
     {
+        // No permitir cambiar el rol al propio usuario
         if ($user->id === Auth::id()) {
             return back()->with('error', 'You cannot change your own role.');
         }
 
+        // Si el usuario objetivo es admin/superadmin, solo superadmin puede tocarlo
+        if ($this->isPrivileged($user) && !Auth::user()->hasRole('superadmin')) {
+            return back()->with('error', 'Only superadmin can manage admin accounts.');
+    }
+
         $validated = $request->validate([
-            'role' => ['required', Rule::in(['admin', 'senior', 'junior', 'intern'])],
+            'role' => ['required', Rule::in($this->assignableRoles())],
         ]);
 
         $user->syncRoles([$validated['role']]);
@@ -130,6 +164,10 @@ class UserController extends Controller
     {
         if ($user->id === Auth::id()) {
             return back()->with('error', 'You cannot deactivate your own account.');
+        }
+
+        if ($this->isPrivileged($user) && !Auth::user()->hasRole('superadmin')) {
+            return back()->with('error', 'Only superadmin can deactivate admin accounts.');
         }
 
         $user->update(['is_active' => false]);
