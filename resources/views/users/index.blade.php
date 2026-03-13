@@ -52,9 +52,15 @@
                                     @can('users.edit')
                                         <a class="underline" href="{{ route('users.edit', $u) }}">Edit</a>
                                     @endcan
+                                    
+                                    @php
+                                        $actorIsSuper = Auth::user()->hasRole('superadmin');
+                                        $targetIsPrivileged = $u->hasAnyRole(['superadmin','admin']);
+                                    @endphp
 
                                     @can('users.deactivate')
-                                        @if($u->is_active && $u->id !== auth()->id())
+                                        {{-- Deactivate solo si: activo, no soy yo, y (no es privileged o soy superadmin) --}}
+                                        @if($u->is_active && $u->id !== auth()->id() && ($actorIsSuper || !$targetIsPrivileged))
                                             <form class="inline" method="POST" action="{{ route('users.deactivate', $u) }}">
                                                 @csrf
                                                 @method('PATCH')
@@ -63,7 +69,9 @@
                                                 </button>
                                             </form>
                                         @endif
-                                        @if(!$u->is_active)
+
+                                        {{-- Activate solo si: inactivo, y (no es privileged o soy superadmin) --}}
+                                        @if(!$u->is_active && ($actorIsSuper || !$targetIsPrivileged))
                                             <form class="inline" method="POST" action="{{ route('users.activate', $u) }}">
                                                 @csrf
                                                 @method('PATCH')

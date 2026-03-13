@@ -53,8 +53,14 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Role</label>
+                        @php
+                        $rolesAllowed = auth()->user()->hasRole('superadmin')
+                            ? ['admin','senior','junior','intern']
+                            : ['senior','junior','intern'];
+                        @endphp
+
                         <select name="role" class="mt-1 w-full rounded-xl border-gray-200 bg-white" required>
-                            @foreach($roles as $r)
+                            @foreach($rolesAllowed as $r)
                                 <option value="{{ $r }}" @selected(old('role','junior') === $r)>{{ ucfirst($r) }}</option>
                             @endforeach
                         </select>

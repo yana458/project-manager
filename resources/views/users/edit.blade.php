@@ -53,24 +53,25 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Role</label>
-
                         @php($currentRole = $user->getRoleNames()->first() ?? 'junior')
 
-                        <select name="role"
-                                class="mt-1 w-full rounded-xl border-gray-200 bg-white"
-                                @disabled($user->id === auth()->id())>
-                            @foreach($roles as $r)
-                                <option value="{{ $r }}" @selected(old('role', $currentRole) === $r)>{{ ucfirst($r) }}</option>
-                            @endforeach
-                        </select>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Role</label>
 
-                        @if($user->id === auth()->id())
-                            <p class="text-xs text-gray-500 mt-1">You cannot change your own role.</p>
-                        @endif
+                            <select name="role"
+                                    class="mt-1 w-full rounded-xl border-gray-200 bg-white"
+                                    @disabled($user->id === auth()->id())>
+                                @foreach($rolesAllowed as $r)
+                                    <option value="{{ $r }}" @selected(old('role', $currentRole) === $r)>{{ ucfirst($r) }}</option>
+                                @endforeach
+                            </select>
 
-                        @error('role') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
-                    </div>
+                            @if($user->id === auth()->id())
+                                <p class="text-xs text-gray-500 mt-1">You cannot change your own role.</p>
+                            @endif
+
+                            @error('role') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+                        </div>
                     <div class="pt-2 border-t"></div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">

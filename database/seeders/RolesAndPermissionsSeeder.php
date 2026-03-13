@@ -13,12 +13,10 @@ class RolesAndPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
-        // Limpia cache de permisos antes de tocar roles/permisos
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $guard = 'web';
 
-        // Lista de permisos
         $permissions = [
             // users
             'users.view','users.create','users.edit','users.deactivate','users.role.assign',
@@ -42,6 +40,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'project_team.view','project_team.manage',
         ];
 
+        // Crear/asegurar permisos con guard correcto
         foreach ($permissions as $perm) {
             Permission::updateOrCreate(
                 ['name' => $perm, 'guard_name' => $guard],
@@ -49,29 +48,31 @@ class RolesAndPermissionsSeeder extends Seeder
             );
         }
 
-        // Roles
-    $admin  = Role::updateOrCreate(['name' => 'admin',  'guard_name' => $guard]);
-    $senior = Role::updateOrCreate(['name' => 'senior', 'guard_name' => $guard]);
-    $junior = Role::updateOrCreate(['name' => 'junior', 'guard_name' => $guard]);
-    $intern = Role::updateOrCreate(['name' => 'intern', 'guard_name' => $guard]);
+        // Roles (incluye superadmin)
+        $superadmin = Role::updateOrCreate(['name' => 'superadmin', 'guard_name' => $guard]);
+        $admin      = Role::updateOrCreate(['name' => 'admin',      'guard_name' => $guard]);
+        $senior     = Role::updateOrCreate(['name' => 'senior',     'guard_name' => $guard]);
+        $junior     = Role::updateOrCreate(['name' => 'junior',     'guard_name' => $guard]);
+        $intern     = Role::updateOrCreate(['name' => 'intern',     'guard_name' => $guard]);
 
-        // Asignación por rol 
+        // Asignación de permisos
+        // superadmin: todo (igual que admin)
+        $superadmin->syncPermissions($permissions);
+
         // admin: todo
         $admin->syncPermissions($permissions);
 
-        // senior: ver + editar clientes/proyectos, sin "deactivate", y puede gestionar services/team del proyecto
+        // senior
         $senior->syncPermissions([
             'clients.view','clients.edit',
             'projects.view','projects.edit','projects.status.change',
-
             'project_services.view','project_services.manage',
             'project_team.view','project_team.manage',
-
             'client_services.view',
             'services.view',
         ]);
 
-        // junior: consulta + actualizar progreso (sin editar proyecto "importante")
+        // junior
         $junior->syncPermissions([
             'clients.view',
             'projects.view',
@@ -80,7 +81,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'client_services.view',
         ]);
 
-        // intern: solo consulta
+        // intern
         $intern->syncPermissions([
             'clients.view',
             'projects.view',
@@ -89,24 +90,60 @@ class RolesAndPermissionsSeeder extends Seeder
             'client_services.view',
         ]);
 
-        // Usuario admin inicial (ajustar email/pass en .env)
+        /*
+        |--------------------------------------------------------------------------
+        | Crear usuario SUPERADMIN fijo (solo por .env)
+        |--------------------------------------------------------------------------
+        */
+        $superEmail = env('SUPERADMIN_EMAIL');
+        $superPass  = env('SUPERADMIN_PASSWORD');
+
+        if ($superEmail && $superPass) {
+            $su = User::firstOrCreate(
+                ['email' => $superEmail],
+                [
+                    'name' => 'Super Admin',
+                    'password' => Hash::make($superPass),
+                    'department' => 'development',
+                    'is_active' => true,
+                ]
+            );
+
+            // Asegurar rol y estado/department si ya existía
+            $su->update([
+                'department' => $su->department ?? 'development',
+                'is_active' => $su->is_active ?? true,
+            ]);
+
+            $su->syncRoles(['superadmin']);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Crear usuario ADMIN fijo (normal) por .env
+        |--------------------------------------------------------------------------
+        */
         $adminEmail = env('ADMIN_EMAIL', 'admin@example.com');
         $adminPass  = env('ADMIN_PASSWORD', 'admin12345');
 
-        $user = User::firstOrCreate(
+        $au = User::firstOrCreate(
             ['email' => $adminEmail],
             [
                 'name' => 'Admin',
                 'password' => Hash::make($adminPass),
+                'department' => 'marketing', // o el depto que quieras por defecto
+                'is_active' => true,
             ]
         );
 
-        if (! $user->hasRole('admin')) {
-            $user->assignRole('admin');
-        }
+        // Asegurar valores mínimos si ya existía
+        $au->update([
+            'department' => $au->department ?? 'marketing',
+            'is_active' => $au->is_active ?? true,
+        ]);
 
-        // Opcional: reset cache (por si acaso)
-        // (también se puede hacer con php artisan permission:cache-reset)
+        $au->syncRoles(['admin']);
+
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }
