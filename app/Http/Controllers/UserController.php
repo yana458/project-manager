@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
+use Spatie\Permission\Models\Permission;
 
 class UserController extends Controller
 {
@@ -20,7 +21,12 @@ class UserController extends Controller
 
     public function show(User $user)
     {
-        return view('users.show', compact('user'));
+        $permissionsForAssignment = Permission::query()
+            ->where('guard_name', 'web')
+            ->orderBy('name')
+            ->get();
+
+        return view('users.show', compact('user', 'permissionsForAssignment'));
     }
 
     public function create()
@@ -60,8 +66,15 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
+        if ($user->hasRole('superadmin') && !Auth::user()?->hasRole('superadmin')) {
+            return redirect()
+                ->route('users.show', $user)
+                ->with('error', 'Only superadmin can edit a superadmin.');
+        }
+
         $departments = User::DEPARTMENTS;
         $rolesAllowed = $this->assignableRoles();
+
         return view('users.edit', compact('user', 'departments', 'rolesAllowed'));
     }
 
@@ -173,5 +186,59 @@ class UserController extends Controller
         $user->update(['is_active' => false]);
 
         return back()->with('success', 'User deactivated.');
+    }
+
+   public function updatePermissions(Request $request, User $user)
+{
+        /** @var \App\Models\User|null $actor */
+        $actor = Auth::user();
+
+        if (!$actor || !$actor->hasAnyRole(['admin', 'superadmin'])) {
+            abort(403);
+        }
+
+        if ($user->id === $actor->id) {
+            return back()->with('error', 'No puedes modificar tus propios permisos.');
+        }
+
+        if (!$user->hasAnyRole(['senior', 'junior', 'intern'])) {
+            return back()->with('error', 'Solo se pueden gestionar permisos extra para senior, junior e intern.');
+        }
+
+        $allVisible = Permission::query()
+            ->where('guard_name', 'web')
+            ->pluck('name')
+            ->filter(fn ($name) => $actor->hasRole('superadmin') || !str_starts_with($name, 'users.'))
+            ->values();
+
+        $inherited = $user->getPermissionsViaRoles()->pluck('name')->toArray();
+
+        // Solo extras: lo visible menos lo heredado por rol
+        $editable = $allVisible
+            ->reject(fn ($name) => in_array($name, $inherited, true))
+            ->values()
+            ->all();
+
+        $validated = $request->validate([
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => ['string', Rule::in($editable)],
+        ]);
+
+        // Conserva permisos directos ocultos que este actor no puede tocar
+        $currentDirect = $user->getDirectPermissions()->pluck('name');
+
+        $hiddenDirect = $currentDirect
+            ->reject(fn ($name) => in_array($name, $editable, true))
+            ->values()
+            ->all();
+
+        $selectedEditable = $validated['permissions'] ?? [];
+
+        $user->syncPermissions(array_values(array_unique([
+            ...$hiddenDirect,
+            ...$selectedEditable,
+        ])));
+
+        return back()->with('success', 'Permisos extra actualizados correctamente.');
     }
 }
