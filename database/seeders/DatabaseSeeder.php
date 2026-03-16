@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
 
             // Más adelante puedes añadir:
             // ClientsSeeder::class,
-            // ServicesSeeder::class,
+            ServiceSeeder::class,
             // ProjectsSeeder::class,
         ]);
     }
