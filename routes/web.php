@@ -53,13 +53,18 @@ Route::middleware(['auth'])->group(function () {
 
         // activar usuario
         Route::patch('/{user}/activate', [UserController::class, 'activate'])
-            ->middleware('permission:users.deactivate') // o users.edit si prefieres
+            ->middleware('permission:users.deactivate') 
             ->name('activate');
 
         // cambiar rol (botón dedicado)
         Route::patch('/{user}/role', [UserController::class, 'assignRole'])
             ->middleware('permission:users.role.assign')
             ->name('role.assign');
+
+        // asignar permisos individuales
+        Route::patch('/{user}/permissions', [UserController::class, 'updatePermissions'])
+            ->middleware('permission:users.permissions.assign')
+            ->name('permissions.update');
     });
 
     // Perfil
