@@ -26,8 +26,8 @@ class Client extends Model
         'social_links' => 'array',
     ];
 
-    // public function projects(): HasMany
-    // {
-    //     return $this->hasMany(Project::class);
-    // }
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
+    }
 }

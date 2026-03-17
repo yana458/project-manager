@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -21,9 +22,6 @@ Route::middleware(['auth'])->group(function () {
     })->name('dashboard');
 
     // Placeholders (por ahora apuntan al dashboard)
-    Route::get('/projects', fn () => redirect()->route('dashboard'))
-        ->middleware('permission:projects.view')
-        ->name('projects.index');
 
     Route::get('/services', fn () => redirect()->route('dashboard'))
         ->middleware('permission:services.view')
@@ -94,6 +92,45 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/{client}/activate', [ClientController::class, 'activate'])
             ->middleware('permission:clients.deactivate')
             ->name('activate');
+    });
+
+    // Projects CRUD
+    Route::prefix('projects')->name('projects.')->group(function () {
+        Route::get('/', [ProjectController::class, 'index'])
+            ->middleware('permission:projects.view')
+            ->name('index');
+
+        Route::get('/create', [ProjectController::class, 'create'])
+            ->middleware('permission:projects.create')
+            ->name('create');
+
+        Route::post('/', [ProjectController::class, 'store'])
+            ->middleware('permission:projects.create')
+            ->name('store');
+
+        Route::get('/{project}', [ProjectController::class, 'show'])
+            ->middleware('permission:projects.view')
+            ->name('show');
+
+        Route::get('/{project}/edit', [ProjectController::class, 'edit'])
+            ->middleware('permission:projects.edit')
+            ->name('edit');
+
+        Route::put('/{project}', [ProjectController::class, 'update'])
+            ->middleware('permission:projects.edit')
+            ->name('update');
+
+        Route::patch('/{project}/pause', [ProjectController::class, 'pause'])
+            ->middleware('permission:projects.status.change')
+            ->name('pause');
+
+        Route::patch('/{project}/activate', [ProjectController::class, 'activate'])
+            ->middleware('permission:projects.status.change')
+            ->name('activate');
+
+        Route::patch('/{project}/finish', [ProjectController::class, 'finish'])
+            ->middleware('permission:projects.status.change')
+            ->name('finish');
     });
 
     // Profile
