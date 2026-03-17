@@ -118,8 +118,8 @@
                 <div class="mt-6 border-t pt-4">
                     <h3 class="text-base font-semibold text-gray-900">Projects</h3>
 
-                    {{-- @if($client->projects->count()) --}}
-                        {{-- <ul class="mt-3 space-y-2">
+                    @if($client->projects->count())
+                        <ul class="mt-3 space-y-2">
                             @foreach($client->projects as $project)
                                 <li class="rounded-xl border p-3">
                                     {{ $project->name }}
@@ -128,10 +128,7 @@
                         </ul>
                     @else
                         <p class="mt-2 text-sm text-gray-500">No associated projects yet.</p>
-                    @endif --}}
-                    <p class="mt-2 text-sm text-gray-500">
-                        This section will be added in the projects integration.
-                    </p>
+                    @endif
                 </div>
 
                 <div class="mt-6 border-t pt-4">
