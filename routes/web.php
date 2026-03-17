@@ -1,9 +1,10 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return Auth::check() ? redirect('/dashboard') : redirect('/login');
@@ -20,10 +21,6 @@ Route::middleware(['auth'])->group(function () {
     })->name('dashboard');
 
     // Placeholders (por ahora apuntan al dashboard)
-    Route::get('/clients', fn () => redirect()->route('dashboard'))
-        ->middleware('permission:clients.view')
-        ->name('clients.index');
-
     Route::get('/projects', fn () => redirect()->route('dashboard'))
         ->middleware('permission:projects.view')
         ->name('projects.index');
@@ -51,23 +48,55 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/{user}/deactivate', [UserController::class, 'deactivate'])
             ->middleware('permission:users.deactivate')->name('deactivate');
 
-        // activar usuario
         Route::patch('/{user}/activate', [UserController::class, 'activate'])
-            ->middleware('permission:users.deactivate') 
+            ->middleware('permission:users.deactivate')
             ->name('activate');
 
-        // cambiar rol (botón dedicado)
         Route::patch('/{user}/role', [UserController::class, 'assignRole'])
             ->middleware('permission:users.role.assign')
             ->name('role.assign');
 
-        // asignar permisos individuales
         Route::patch('/{user}/permissions', [UserController::class, 'updatePermissions'])
             ->middleware('permission:users.permissions.assign')
             ->name('permissions.update');
     });
 
-    // Perfil
+    // Clients CRUD
+    Route::prefix('clients')->name('clients.')->group(function () {
+        Route::get('/', [ClientController::class, 'index'])
+            ->middleware('permission:clients.view')
+            ->name('index');
+
+        Route::get('/create', [ClientController::class, 'create'])
+            ->middleware('permission:clients.create')
+            ->name('create');
+
+        Route::post('/', [ClientController::class, 'store'])
+            ->middleware('permission:clients.create')
+            ->name('store');
+
+        Route::get('/{client}', [ClientController::class, 'show'])
+            ->middleware('permission:clients.view')
+            ->name('show');
+
+        Route::get('/{client}/edit', [ClientController::class, 'edit'])
+            ->middleware('permission:clients.edit')
+            ->name('edit');
+
+        Route::put('/{client}', [ClientController::class, 'update'])
+            ->middleware('permission:clients.edit')
+            ->name('update');
+
+        Route::patch('/{client}/deactivate', [ClientController::class, 'deactivate'])
+            ->middleware('permission:clients.deactivate')
+            ->name('deactivate');
+
+        Route::patch('/{client}/activate', [ClientController::class, 'activate'])
+            ->middleware('permission:clients.deactivate')
+            ->name('activate');
+    });
+
+    // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
