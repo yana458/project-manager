@@ -14,18 +14,16 @@ class ServiceSeeder extends Seeder
 
         // Servicios de Desarrollo
         $desarrolloServices = [
-            ['name' => 'Desarrollo Web a Medida', 'subcategory' => 'Full Stack'],
-            ['name' => 'Desarrollo de Aplicaciones Móviles', 'subcategory' => 'Mobile'],
-            ['name' => 'Desarrollo de APIs REST', 'subcategory' => 'Backend'],
-            ['name' => 'Desarrollo Frontend con Vue.js', 'subcategory' => 'Frontend'],
-            ['name' => 'Desarrollo de E-commerce', 'subcategory' => null],
+            ['name' => 'Desarrollo Web a Medida', 'sub_category' => 'Full Stack'],
+            ['name' => 'Desarrollo de E-commerce', 'sub_category' => null],
+            
         ];
 
         foreach ($desarrolloServices as $service) {
             Service::create([
                 'name' => $service['name'],
                 'category' => 'Desarrollo',
-                'subcategory' => $service['subcategory'],
+                'sub_category' => $service['sub_category'],
                 'description' => 'Servicio profesional de ' . strtolower($service['name']) . ' con las últimas tecnologías del mercado.',
                 'is_active' => true,
             ]);
@@ -33,18 +31,17 @@ class ServiceSeeder extends Seeder
 
         // Servicios de Marketing
         $marketingServices = [
-            ['name' => 'Posicionamiento SEO', 'subcategory' => 'SEO'],
-            ['name' => 'Campañas Google Ads', 'subcategory' => 'SEM'],
-            ['name' => 'Marketing en Redes Sociales', 'subcategory' => null],
-            ['name' => 'Email Marketing', 'subcategory' => null],
-            ['name' => 'Marketing de Contenidos', 'subcategory' => null],
+            ['name' => 'Posicionamiento Web', 'sub_category' => 'SEO'],
+            ['name' => 'Marketing en Redes Sociales', 'sub_category' => null],
+            ['name' => 'Email Marketing', 'sub_category' => null],
+            ['name' => 'Marketing de Contenidos', 'sub_category' => null],
         ];
 
         foreach ($marketingServices as $service) {
             Service::create([
                 'name' => $service['name'],
                 'category' => 'Marketing',
-                'subcategory' => $service['subcategory'],
+                'sub_category' => $service['sub_category'],
                 'description' => 'Estrategia de ' . strtolower($service['name']) . ' para maximizar tu presencia digital.',
                 'is_active' => true,
             ]);
@@ -52,18 +49,16 @@ class ServiceSeeder extends Seeder
 
         // Servicios de Diseño
         $disenoServices = [
-            ['name' => 'Diseño UX/UI', 'subcategory' => 'UX/UI'],
-            ['name' => 'Diseño de Marca', 'subcategory' => 'Gráfico'],
-            ['name' => 'Diseño Web Responsive', 'subcategory' => 'Web'],
-            ['name' => 'Diseño Gráfico Publicitario', 'subcategory' => 'Gráfico'],
-            ['name' => 'Prototipado de Interfaces', 'subcategory' => 'UX/UI'],
+            ['name' => 'Diseño UX/UI', 'sub_category' => 'UX/UI'],
+            ['name' => 'Diseño de Marca', 'sub_category' => 'Gráfico'],
+            ['name' => 'Diseño Gráfico', 'sub_category' => 'Gráfico'],
         ];
 
         foreach ($disenoServices as $service) {
             Service::create([
                 'name' => $service['name'],
                 'category' => 'Diseño',
-                'subcategory' => $service['subcategory'],
+                'sub_category' => $service['sub_category'],
                 'description' => 'Servicio de ' . strtolower($service['name']) . ' orientado a resultados.',
                 'is_active' => true,
             ]);
@@ -71,18 +66,14 @@ class ServiceSeeder extends Seeder
 
         // Servicios de Posicionamiento
         $posicionamientoServices = [
-            ['name' => 'Auditoría SEO Completa', 'subcategory' => 'SEO'],
-            ['name' => 'Optimización SEO On-Page', 'subcategory' => 'SEO'],
-            ['name' => 'Link Building Premium', 'subcategory' => 'SEO'],
-            ['name' => 'Gestión de Campañas SEM', 'subcategory' => 'SEM'],
-            ['name' => 'Análisis de Palabras Clave', 'subcategory' => 'SEO'],
+            ['name' => 'Auditoría SEO Completa', 'sub_category' => 'SEO'],
         ];
 
         foreach ($posicionamientoServices as $service) {
             Service::create([
                 'name' => $service['name'],
                 'category' => 'Posicionamiento',
-                'subcategory' => $service['subcategory'],
+                'sub_category' => $service['sub_category'],
                 'description' => 'Mejora tu visibilidad online con ' . strtolower($service['name']) . '.',
                 'is_active' => true,
             ]);
@@ -92,7 +83,7 @@ class ServiceSeeder extends Seeder
         Service::create([
             'name' => 'Servicio Descontinuado',
             'category' => 'Desarrollo',
-            'subcategory' => null,
+            'sub_category' => null,
             'description' => 'Este servicio ya no está disponible.',
             'is_active' => false,
         ]);
