@@ -145,6 +145,12 @@ Route::middleware(['auth'])->group(function () {
             ->name('team.destroy');
     });
 
+    Route::resource('services', ServiceController::class)->parameters([
+    'services' => 'service'
+]);
+Route::patch('services/{service}/restore', [ServiceController::class, 'restore'])
+     ->name('services.restore');
+
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
