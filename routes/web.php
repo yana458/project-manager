@@ -4,7 +4,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\ProjectTeamController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -132,6 +132,17 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/{project}/finish', [ProjectController::class, 'finish'])
             ->middleware('permission:projects.status.change')
             ->name('finish');
+
+        // Project Team Management
+
+        Route::post('/{project}/team', [ProjectTeamController::class, 'store'])
+            ->name('team.store');
+
+        Route::patch('/{project}/team/{user}', [ProjectTeamController::class, 'update'])
+            ->name('team.update');
+
+        Route::delete('/{project}/team/{user}', [ProjectTeamController::class, 'destroy'])
+            ->name('team.destroy');
     });
 
     Route::resource('services', ServiceController::class)->parameters([

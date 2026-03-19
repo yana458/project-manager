@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\Project;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -78,16 +79,45 @@ class ProjectController extends Controller
 
     public function show(Project $project)
     {
-        $this->denyUnlessCan('projects.view');
+        $actor = Auth::user();
 
-        $project->load('client', 'creator');
+        if (!$actor instanceof User) {
+            abort(403);
+        }
 
-        return view('projects.show', compact('project'));
+        if (!$actor->canViewProjectInstance($project)) {
+            abort(403);
+        }
+
+        $project->load(['client', 'creator', 'users']);
+
+        $assignableUsers = collect();
+
+        if ($actor->canManageProjectTeamInstance($project)) {
+            $assignableUsers = User::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get();
+        }
+
+        return view('projects.show', [
+            'project' => $project,
+            'assignableUsers' => $assignableUsers,
+            'teamRoles' => Project::TEAM_ROLES,
+        ]);
     }
 
     public function edit(Project $project)
     {
-        $this->denyUnlessCan('projects.edit');
+        $actor = Auth::user();
+
+        if (!$actor instanceof User) {
+            abort(403);
+        }
+
+        if (!$actor->canEditProjectInstance($project)) {
+            abort(403);
+        }
 
         $clients = Client::query()
             ->where('is_active', true)
@@ -103,7 +133,15 @@ class ProjectController extends Controller
 
     public function update(Request $request, Project $project)
     {
-        $this->denyUnlessCan('projects.edit');
+        $actor = Auth::user();
+
+        if (!$actor instanceof User) {
+            abort(403);
+        }
+
+        if (!$actor->canEditProjectInstance($project)) {
+            abort(403);
+        }
 
         $validated = $this->validateProject($request);
 
@@ -116,7 +154,15 @@ class ProjectController extends Controller
 
     public function pause(Project $project)
     {
-        $this->denyUnlessCan('projects.status.change');
+        $actor = Auth::user();
+
+        if (!$actor instanceof User) {
+            abort(403);
+        }
+
+        if (!$actor->canChangeProjectStatusInstance($project)) {
+            abort(403);
+        }
 
         if ($project->status === 'paused') {
             return back()->with('success', 'Project is already paused.');
@@ -133,7 +179,15 @@ class ProjectController extends Controller
 
     public function activate(Project $project)
     {
-        $this->denyUnlessCan('projects.status.change');
+        $actor = Auth::user();
+
+        if (!$actor instanceof User) {
+            abort(403);
+        }
+
+        if (!$actor->canChangeProjectStatusInstance($project)) {
+            abort(403);
+        }
 
         if ($project->status === 'active') {
             return back()->with('success', 'Project is already active.');
@@ -150,7 +204,15 @@ class ProjectController extends Controller
 
     public function finish(Project $project)
     {
-        $this->denyUnlessCan('projects.status.change');
+        $actor = Auth::user();
+
+        if (!$actor instanceof User) {
+            abort(403);
+        }
+
+        if (!$actor->canChangeProjectStatusInstance($project)) {
+            abort(403);
+        }
 
         if ($project->status === 'finished') {
             return back()->with('success', 'Project is already finished.');

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Project extends Model
 {
@@ -11,6 +12,12 @@ class Project extends Model
         'active',
         'paused',
         'finished',
+    ];
+
+        public const TEAM_ROLES = [
+        'manager',
+        'editor',
+        'viewer',
     ];
 
     protected $fillable = [
@@ -40,5 +47,13 @@ class Project extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'project_user')
+            ->withPivot(['project_role'])
+            ->withTimestamps()
+            ->orderBy('name');
     }
 }
