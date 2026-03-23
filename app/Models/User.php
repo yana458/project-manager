@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use App\Models\Project;
+use App\Models\ProjectService;
 
 class User extends Authenticatable
 {
@@ -36,10 +37,11 @@ class User extends Authenticatable
             'is_active' => 'boolean',
         ];
     }
+
     public function projects(): BelongsToMany
     {
         return $this->belongsToMany(Project::class, 'project_user')
-            ->withPivot(['specialty', 'project_role'])
+            ->withPivot(['project_role'])
             ->withTimestamps();
     }
 
@@ -58,27 +60,41 @@ class User extends Authenticatable
             ->exists();
     }
 
+    public function hasProtectedGlobalRole(): bool
+    {
+        return $this->hasAnyRole(['superadmin', 'admin']);
+    }
+
     public function canViewProjectInstance(Project $project): bool
     {
-        return $this->can('projects.view') || $this->isAssignedToProject($project);
+        return $this->hasProtectedGlobalRole()
+            || $this->can('projects.view')
+            || $this->isAssignedToProject($project);
     }
 
     public function canEditProjectInstance(Project $project): bool
     {
-        return $this->can('projects.edit')
+        return $this->hasProtectedGlobalRole()
+            || $this->can('projects.edit')
             || $this->hasProjectRole($project, 'manager')
             || $this->hasProjectRole($project, 'editor');
     }
 
     public function canManageProjectTeamInstance(Project $project): bool
     {
-        return $this->can('project_team.manage')
+        return $this->hasProtectedGlobalRole()
             || $this->hasProjectRole($project, 'manager');
     }
 
     public function canChangeProjectStatusInstance(Project $project): bool
     {
-        return $this->can('projects.status.change')
+        return $this->hasProtectedGlobalRole()
+            || $this->can('projects.status.change')
             || $this->hasProjectRole($project, 'manager');
+    }
+
+    public function assignedProjectServices()
+    {
+        return $this->hasMany(ProjectService::class, 'assigned_user_id');
     }
 }

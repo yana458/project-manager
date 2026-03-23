@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\Project;
+use App\Models\Service;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -89,14 +90,43 @@ class ProjectController extends Controller
             abort(403);
         }
 
-        $project->load(['client', 'creator', 'users']);
+        $project->load([
+            'client.services',
+            'users',
+            'projectServices.service',
+            'projectServices.assignedUser',
+        ]);
 
         $assignableUsers = collect();
 
         if ($actor->canManageProjectTeamInstance($project)) {
             $assignableUsers = User::query()
                 ->where('is_active', true)
+                ->whereDoesntHave('projects', function ($query) use ($project) {
+                    $query->where('projects.id', $project->id);
+                })
                 ->orderBy('name')
+                ->get();
+        }
+
+        $availableProjectServices = collect();
+        $assignableServiceUsers = collect();
+
+        if ($actor->can('project_services.manage')) {
+            $availableProjectServices = Service::query()
+                ->where('is_active', true)
+                ->whereHas('clients', function ($query) use ($project) {
+                    $query->where('clients.id', $project->client_id);
+                })
+                ->whereDoesntHave('projects', function ($query) use ($project) {
+                    $query->where('projects.id', $project->id);
+                })
+                ->orderBy('name')
+                ->get();
+
+            $assignableServiceUsers = $project->users()
+                ->where('users.is_active', true)
+                ->orderBy('users.name')
                 ->get();
         }
 
@@ -104,6 +134,9 @@ class ProjectController extends Controller
             'project' => $project,
             'assignableUsers' => $assignableUsers,
             'teamRoles' => Project::TEAM_ROLES,
+            'availableProjectServices' => $availableProjectServices,
+            'assignableServiceUsers' => $assignableServiceUsers,
+            'projectServiceStatuses' => \App\Models\ProjectService::STATUSES,
         ]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Project extends Model
 {
@@ -55,5 +56,23 @@ class Project extends Model
             ->withPivot(['project_role'])
             ->withTimestamps()
             ->orderBy('name');
+    }
+
+    public function services(): BelongsToMany
+    {
+        return $this->belongsToMany(Service::class, 'project_service')
+            ->withPivot([
+                'start_date',
+                'due_date',
+                'status',
+                'notes',
+                'assigned_user_id',
+            ])
+            ->withTimestamps();
+    }
+
+    public function projectServices(): HasMany
+    {
+        return $this->hasMany(ProjectService::class);
     }
 }

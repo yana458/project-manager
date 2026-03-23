@@ -14,7 +14,7 @@ class ProjectTeamController extends Controller
     {
         $actor = Auth::user();
 
-        if (!$actor || !$actor->canManageProjectTeamInstance($project)) {
+        if (!$actor instanceof User || !$actor->canManageProjectTeamInstance($project)) {
             abort(403);
         }
 
@@ -29,9 +29,24 @@ class ProjectTeamController extends Controller
             'project_role' => ['required', Rule::in(Project::TEAM_ROLES)],
         ]);
 
-        $project->users()->attach($validated['user_id'], [
-            'project_role' => $validated['project_role'],
+        $targetUser = User::query()
+            ->where('id', $validated['user_id'])
+            ->where('is_active', true)
+            ->first();
+
+        if (!$targetUser) {
+            return back()->with('error', 'Only active users can be assigned to a project.');
+        }
+
+        $finalRole = $this->normalizeProjectRole($targetUser, $validated['project_role']);
+
+        $project->users()->attach($targetUser->id, [
+            'project_role' => $finalRole,
         ]);
+
+        if ($targetUser->hasProtectedGlobalRole()) {
+            return back()->with('success', 'Admin/superadmin assigned to project as manager automatically.');
+        }
 
         return back()->with('success', 'User assigned to project.');
     }
@@ -40,7 +55,7 @@ class ProjectTeamController extends Controller
     {
         $actor = Auth::user();
 
-        if (!$actor || !$actor->canManageProjectTeamInstance($project)) {
+        if (!$actor instanceof User || !$actor->canManageProjectTeamInstance($project)) {
             abort(403);
         }
 
@@ -52,8 +67,14 @@ class ProjectTeamController extends Controller
             'project_role' => ['required', Rule::in(Project::TEAM_ROLES)],
         ]);
 
+        if ($user->hasProtectedGlobalRole() && $validated['project_role'] !== 'manager') {
+            return back()->with('error', 'Admins and superadmins must always remain manager inside a project.');
+        }
+
+        $finalRole = $this->normalizeProjectRole($user, $validated['project_role']);
+
         $project->users()->updateExistingPivot($user->id, [
-            'project_role' => $validated['project_role'],
+            'project_role' => $finalRole,
         ]);
 
         return back()->with('success', 'Project team member updated.');
@@ -63,12 +84,25 @@ class ProjectTeamController extends Controller
     {
         $actor = Auth::user();
 
-        if (!$actor || !$actor->canManageProjectTeamInstance($project)) {
+        if (!$actor instanceof User || !$actor->canManageProjectTeamInstance($project)) {
             abort(403);
+        }
+
+        if (!$project->users()->where('users.id', $user->id)->exists()) {
+            return back()->with('error', 'That user is not assigned to this project.');
         }
 
         $project->users()->detach($user->id);
 
         return back()->with('success', 'User removed from project.');
+    }
+
+    private function normalizeProjectRole(User $targetUser, string $requestedRole): string
+    {
+        if ($targetUser->hasProtectedGlobalRole()) {
+            return 'manager';
+        }
+
+        return $requestedRole;
     }
 }
