@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
+use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -47,7 +48,22 @@ class ClientController extends Controller
 
     public function show(Client $client)
     {
-        return view('clients.show', compact('client'));
+        $client->load([
+            'services' => fn ($query) => $query->orderBy('name'),
+        ]);
+
+        $availableServices = Service::query()
+            ->where('is_active', true)
+            ->whereDoesntHave('clients', function ($query) use ($client) {
+                $query->where('clients.id', $client->id);
+            })
+            ->orderBy('name')
+            ->get();
+
+        return view('clients.show', [
+            'client' => $client,
+            'availableServices' => $availableServices,
+        ]);
     }
 
     public function edit(Client $client)
