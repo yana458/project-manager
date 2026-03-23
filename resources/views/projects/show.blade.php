@@ -49,7 +49,7 @@
                     <div class="flex flex-col gap-2 min-w-[180px]">
                         @can('projects.edit')
                             <a href="{{ route('projects.edit', $project) }}"
-                            class="text-center rounded-xl bg-gray-900 px-4 py-2 text-sm text-white">
+                               class="text-center rounded-xl bg-gray-900 px-4 py-2 text-sm text-white">
                                 Edit
                             </a>
                         @endcan
@@ -154,149 +154,110 @@
                 </div>
 
                 @can('project_team.view')
-<div class="mt-6 border-t pt-4">
-    <h3 class="text-base font-semibold text-gray-900">Project team</h3>
+                    <div class="mt-6 border-t pt-4">
+                        <h3 class="text-base font-semibold text-gray-900">Project team</h3>
 
-    @if($project->users->count())
-        <div class="mt-3 space-y-3">
-            @foreach($project->users as $member)
-                <div class="rounded-xl border p-4">
-                    <div class="flex items-start justify-between gap-4">
-                        <div>
-                            <div class="font-medium text-gray-900">{{ $member->name }}</div>
-                            <div class="text-sm text-gray-600">{{ $member->email }}</div>
-                            <div class="text-sm text-gray-600 mt-1">
-                                <strong>Department:</strong> {{ ucfirst($member->department) }}
+                        @if($project->users->count())
+                            <div class="mt-3 space-y-3">
+                                @foreach($project->users as $member)
+                                    <div class="rounded-xl border p-4">
+                                        <div class="flex items-start justify-between gap-4">
+                                            <div>
+                                                <div class="font-medium text-gray-900">{{ $member->name }}</div>
+                                                <div class="text-sm text-gray-600">{{ $member->email }}</div>
+                                                <div class="mt-1 text-sm text-gray-600">
+                                                    <strong>Department:</strong> {{ ucfirst($member->department) }}
+                                                </div>
+                                                <div class="text-sm text-gray-600">
+                                                    <strong>Project role:</strong> {{ ucfirst($member->pivot->project_role) }}
+                                                </div>
+                                            </div>
+
+                                            @if(auth()->user()->canManageProjectTeamInstance($project))
+                                                <form method="POST" action="{{ route('projects.team.destroy', [$project, $member]) }}">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button class="rounded-xl border border-red-200 px-4 py-2 text-sm text-red-700"
+                                                            onclick="return confirm('Remove this user from the project?')">
+                                                        Remove
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </div>
+
+                                        @if(auth()->user()->canManageProjectTeamInstance($project))
+                                            <form method="POST"
+                                                  action="{{ route('projects.team.update', [$project, $member]) }}"
+                                                  class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                @csrf
+                                                @method('PATCH')
+
+                                                <div class="md:col-span-2">
+                                                    <label class="block text-sm font-medium text-gray-700">Project role</label>
+                                                    <select name="project_role" class="mt-1 w-full rounded-xl border-gray-200 bg-white">
+                                                        @foreach($teamRoles as $role)
+                                                            <option value="{{ $role }}" @selected($member->pivot->project_role === $role)>
+                                                                {{ ucfirst($role) }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+
+                                                <div class="flex items-end">
+                                                    <button class="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white">
+                                                        Save changes
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        @endif
+                                    </div>
+                                @endforeach
                             </div>
-                            <div class="text-sm text-gray-600">
-                                <strong>Project role:</strong> {{ ucfirst($member->pivot->project_role) }}
-                            </div>
-                        </div>
+                        @else
+                            <p class="mt-2 text-sm text-gray-500">No users assigned yet.</p>
+                        @endif
 
                         @if(auth()->user()->canManageProjectTeamInstance($project))
-                            <form method="POST" action="{{ route('projects.team.destroy', [$project, $member]) }}">
-                                @csrf
-                                @method('DELETE')
-                                <button class="rounded-xl border border-red-200 px-4 py-2 text-sm text-red-700"
-                                        onclick="return confirm('Remove this user from the project?')">
-                                    Remove
-                                </button>
-                            </form>
+                            <div class="mt-6 border-t pt-4">
+                                <h4 class="mb-3 text-sm font-semibold text-gray-900">Add team member</h4>
+
+                                <form method="POST"
+                                      action="{{ route('projects.team.store', $project) }}"
+                                      class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    @csrf
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">User</label>
+                                        <select name="user_id" class="mt-1 w-full rounded-xl border-gray-200 bg-white" required>
+                                            <option value="">Select a user</option>
+                                            @foreach($assignableUsers as $userOption)
+                                                <option value="{{ $userOption->id }}">
+                                                    {{ $userOption->name }} - {{ $userOption->email }} - {{ ucfirst($userOption->department) }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Project role</label>
+                                        <select name="project_role" class="mt-1 w-full rounded-xl border-gray-200 bg-white" required>
+                                            @foreach($teamRoles as $role)
+                                                <option value="{{ $role }}">{{ ucfirst($role) }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    <div class="flex items-end">
+                                        <button class="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white">
+                                            Add to project
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         @endif
                     </div>
-
-                    @if(auth()->user()->canManageProjectTeamInstance($project))
-                        <form method="POST" action="{{ route('projects.team.update', [$project, $member]) }}" class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-                            @csrf
-                            @method('PATCH')
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Project role</label>
-                                <select name="project_role" class="mt-1 w-full rounded-xl border-gray-200 bg-white">
-                                    @foreach($teamRoles as $role)
-                                        <option value="{{ $role }}" @selected($member->pivot->project_role === $role)>
-                                            {{ ucfirst($role) }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Project role</label>
-                                <select name="project_role" class="mt-1 w-full rounded-xl border-gray-200 bg-white">
-                                    @foreach($teamRoles as $role)
-                                        <option value="{{ $role }}" @selected($member->pivot->project_role === $role)>
-                                            {{ ucfirst($role) }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div class="flex items-end">
-                                <button class="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white">
-                                    Save changes
-                                </button>
-                            </div>
-                        </form>
-                    @endif
-                </div>
-            @endforeach
-        </div>
-    @else
-        <p class="mt-2 text-sm text-gray-500">No users assigned yet.</p>
-    @endif
-
-    @if(auth()->user()->canManageProjectTeamInstance($project))
-        <div class="mt-6 border-t pt-4">
-            <h4 class="text-sm font-semibold text-gray-900 mb-3">Add team member</h4>
-
-            <form method="POST" action="{{ route('projects.team.store', $project) }}" class="grid grid-cols-1 md:grid-cols-4 gap-3">
-                @csrf
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">User</label>
-                    <select name="user_id" class="mt-1 w-full rounded-xl border-gray-200 bg-white" required>
-                        <option value="">Select a user</option>
-                        @foreach($assignableUsers as $userOption)
-                            <option value="{{ $userOption->id }}">
-                                {{ $userOption->name }} - {{ $userOption->email }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <form method="POST" action="{{ route('projects.team.store', $project) }}" class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    @csrf
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">User</label>
-                        <select name="user_id" class="mt-1 w-full rounded-xl border-gray-200 bg-white" required>
-                            <option value="">Select a user</option>
-                            @foreach($assignableUsers as $userOption)
-                                <option value="{{ $userOption->id }}">
-                                    {{ $userOption->name }} - {{ $userOption->email }} - {{ ucfirst($userOption->department) }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Project role</label>
-                        <select name="project_role" class="mt-1 w-full rounded-xl border-gray-200 bg-white" required>
-                            @foreach($teamRoles as $role)
-                                <option value="{{ $role }}">{{ ucfirst($role) }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="flex items-end">
-                        <button class="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white">
-                            Add to project
-                        </button>
-                    </div>
-                </form>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Project role</label>
-                    <select name="project_role" class="mt-1 w-full rounded-xl border-gray-200 bg-white" required>
-                        @foreach($teamRoles as $role)
-                            <option value="{{ $role }}">{{ ucfirst($role) }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="flex items-end">
-                    <button class="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white">
-                        Add to project
-                    </button>
-                </div>
-            </form>
-        </div>
-    @endif
-</div>
-@endcan
+                @endcan
             </div>
         </div>
     </div>
 </x-app-layout>
-
