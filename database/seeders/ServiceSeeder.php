@@ -9,9 +9,6 @@ class ServiceSeeder extends Seeder
 {
     public function run(): void
     {
-        // Limpiar tabla
-        Service::truncate();
-
         // Servicios de Desarrollo
         $desarrolloServices = [
             ['name' => 'Desarrollo Web a Medida', 'sub_category' => 'Full Stack'],

@@ -32,7 +32,6 @@ Route::middleware(['auth'])->group(function () {
     */
     Route::prefix('users')->name('users.')->middleware('permission:users.view')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('index');
-        Route::get('/{user}', [UserController::class, 'show'])->name('show');
 
         Route::get('/create', [UserController::class, 'create'])
             ->middleware('permission:users.create')
@@ -41,6 +40,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/', [UserController::class, 'store'])
             ->middleware('permission:users.create')
             ->name('store');
+
+        Route::get('/{user}', [UserController::class, 'show'])->name('show');
 
         Route::get('/{user}/edit', [UserController::class, 'edit'])
             ->middleware('permission:users.edit')
