@@ -9,6 +9,8 @@
     </x-slot>
 
     @php
+        $actor = auth()->user();
+
         $serviceStatusLabels = [
             'pending' => 'Pendiente',
             'in_progress' => 'En progreso',
@@ -21,6 +23,14 @@
             'editor' => 'Editor',
             'viewer' => 'Lector',
         ];
+
+        $canEditProject = $actor->canEditProjectInstance($project);
+        $canChangeProjectStatus = $actor->canChangeProjectStatusInstance($project);
+        $canManageProjectTeam = $actor->canManageProjectTeamInstance($project);
+        $canManageProjectServices = $actor->canManageProjectServicesInstance($project);
+
+        $canViewClient = $actor->can('clients.view');
+        $canManageClientServices = $actor->can('client_services.manage');
     @endphp
 
     <div class="py-6 pb-32">
@@ -71,14 +81,14 @@
                     </div>
 
                     <div class="flex flex-col gap-2 min-w-[180px]">
-                        @if(auth()->user()->canEditProjectInstance($project))
+                        @if($canEditProject)
                             <a href="{{ route('projects.edit', $project) }}"
                                class="text-center rounded-xl bg-gray-900 px-4 py-2 text-sm text-white">
                                 Editar
                             </a>
                         @endif
 
-                        @if(auth()->user()->canChangeProjectStatusInstance($project))
+                        @if($canChangeProjectStatus)
                             @if($project->status === 'active')
                                 <form method="POST" action="{{ route('projects.pause', $project) }}">
                                     @csrf
@@ -179,12 +189,12 @@
                             </p>
                         </div>
 
-                        @if(auth()->user()->can('client_services.manage'))
+                        @if($canManageClientServices)
                             <a href="{{ route('clients.show', $project->client) }}#servicios-contratados"
                                class="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white">
                                 Ir a servicios del cliente
                             </a>
-                        @elseif(auth()->user()->can('clients.view'))
+                        @elseif($canViewClient)
                             <a href="{{ route('clients.show', $project->client) }}#servicios-contratados"
                                class="rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                                 Ver servicios del cliente
@@ -248,7 +258,7 @@
                                             </div>
                                         </div>
 
-                                        @can('project_services.manage')
+                                        @if($canManageProjectServices)
                                             <form method="POST"
                                                   action="{{ route('projects.services.destroy', [$project, $projectService]) }}">
                                                 @csrf
@@ -259,10 +269,10 @@
                                                     Quitar
                                                 </button>
                                             </form>
-                                        @endcan
+                                        @endif
                                     </div>
 
-                                    @can('project_services.manage')
+                                    @if($canManageProjectServices)
                                         <form method="POST"
                                               action="{{ route('projects.services.update', [$project, $projectService]) }}"
                                               class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -325,7 +335,7 @@
                                                 </button>
                                             </div>
                                         </form>
-                                    @endcan
+                                    @endif
                                 </div>
                             @endforeach
                         </div>
@@ -333,7 +343,7 @@
                         <p class="mt-3 text-sm text-gray-500">Todavía no hay servicios añadidos a este proyecto.</p>
                     @endif
 
-                    @can('project_services.manage')
+                    @if($canManageProjectServices)
                         <div class="mt-6 border-t pt-4 pb-16">
                             <h4 class="mb-3 text-sm font-semibold text-gray-900">Añadir servicio al proyecto</h4>
 
@@ -423,14 +433,14 @@
                                     No hay servicios disponibles para añadir a este proyecto. Primero tienes que contratar al menos un servicio para este cliente.
                                 </div>
 
-                                @if(auth()->user()->can('client_services.manage'))
+                                @if($canManageClientServices)
                                     <div class="mt-4">
                                         <a href="{{ route('clients.show', $project->client) }}#servicios-contratados"
                                            class="inline-flex rounded-xl bg-gray-900 px-4 py-2 text-sm text-white">
                                             Añadir servicio contratado al cliente
                                         </a>
                                     </div>
-                                @elseif(auth()->user()->can('clients.view'))
+                                @elseif($canViewClient)
                                     <div class="mt-4">
                                         <a href="{{ route('clients.show', $project->client) }}#servicios-contratados"
                                            class="inline-flex rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
@@ -440,7 +450,7 @@
                                 @endif
                             @endif
                         </div>
-                    @endcan
+                    @endif
                 </div>
 
                 <div class="mt-6 border-t pt-4">
@@ -477,7 +487,7 @@
                                             </div>
                                         </div>
 
-                                        @if(auth()->user()->canManageProjectTeamInstance($project))
+                                        @if($canManageProjectTeam)
                                             <form method="POST" action="{{ route('projects.team.destroy', [$project, $member]) }}">
                                                 @csrf
                                                 @method('DELETE')
@@ -489,7 +499,7 @@
                                         @endif
                                     </div>
 
-                                    @if(auth()->user()->canManageProjectTeamInstance($project))
+                                    @if($canManageProjectTeam)
                                         <form method="POST"
                                               action="{{ route('projects.team.update', [$project, $member]) }}"
                                               class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -530,7 +540,7 @@
                         <p class="mt-2 text-sm text-gray-500">Todavía no hay usuarios asignados.</p>
                     @endif
 
-                    @if(auth()->user()->canManageProjectTeamInstance($project))
+                    @if($canManageProjectTeam)
                         <div class="mt-6 border-t pt-4 pb-16">
                             <h4 class="mb-3 text-sm font-semibold text-gray-900">Añadir miembro al equipo</h4>
 

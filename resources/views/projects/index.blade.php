@@ -1,15 +1,34 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Projects</h2>
+            <div>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">Proyectos</h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    Consulta, filtra y gestiona los proyectos según tu nivel de acceso.
+                </p>
+            </div>
 
             @can('projects.create')
-                <a href="{{ route('projects.create') }}" class="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white">
-                    Create project
+                <a href="{{ route('projects.create') }}" class="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white hover:bg-black">
+                    Crear proyecto
                 </a>
             @endcan
         </div>
     </x-slot>
+
+    @php
+        $statusLabels = [
+            'active' => 'Activo',
+            'paused' => 'Pausado',
+            'finished' => 'Finalizado',
+        ];
+
+        $projectRoleLabels = [
+            'manager' => 'Manager',
+            'editor' => 'Editor',
+            'viewer' => 'Viewer',
+        ];
+    @endphp
 
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -26,141 +45,201 @@
                 </div>
             @endif
 
-            <div class="bg-white shadow rounded-xl p-4 mb-4">
+            <div class="mb-4 rounded-xl bg-white p-4 shadow">
                 <form method="GET" action="{{ route('projects.index') }}" class="space-y-3">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
                         <div class="md:col-span-2">
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Buscar</label>
                             <input
                                 type="text"
                                 name="search"
                                 value="{{ $search }}"
-                                placeholder="Search by project or client"
+                                placeholder="Buscar por proyecto o cliente"
                                 class="w-full rounded-xl border-gray-200 bg-white"
                             >
                         </div>
 
                         <div>
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Estado</label>
                             <select name="status" class="w-full rounded-xl border-gray-200 bg-white">
-                                <option value="">All statuses</option>
+                                <option value="">Todos los estados</option>
                                 @foreach($statuses as $projectStatus)
                                     <option value="{{ $projectStatus }}" @selected($status === $projectStatus)>
-                                        {{ ucfirst($projectStatus) }}
+                                        {{ $statusLabels[$projectStatus] ?? ucfirst($projectStatus) }}
                                     </option>
                                 @endforeach
                             </select>
                         </div>
+
+                        <div class="flex items-end">
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="my_projects" value="1" class="rounded" @checked($myOnly)>
+                                <span>Solo mis proyectos</span>
+                            </label>
+                        </div>
                     </div>
 
                     <div class="flex items-center justify-between">
-                        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                            <input type="checkbox" name="my_projects" value="1" class="rounded" @checked($myOnly)>
-                            <span>My projects only</span>
-                        </label>
+                        <div class="text-sm text-gray-500">
+                            {{ $projects->total() }} proyecto{{ $projects->total() === 1 ? '' : 's' }} encontrado{{ $projects->total() === 1 ? '' : 's' }}
+                        </div>
 
-                        <button class="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white">
-                            Search
-                        </button>
+                        <div class="flex gap-2">
+                            <a href="{{ route('projects.index') }}"
+                               class="rounded-xl border px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                Limpiar filtros
+                            </a>
+
+                            <button class="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white hover:bg-black">
+                                Buscar
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
 
-            <div class="bg-white shadow rounded-xl overflow-x-auto">
+            <div class="overflow-x-auto rounded-xl bg-white shadow">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 text-gray-600">
                         <tr>
-                            <th class="text-left p-3">Name</th>
-                            <th class="text-left p-3">Client</th>
-                            <th class="text-left p-3">Company</th>
-                            <th class="text-left p-3">Status</th>
-                            <th class="text-left p-3">Start date</th>
-                            <th class="text-left p-3">End date</th>
-                            <th class="text-right p-3">Actions</th>
+                            <th class="p-3 text-left">Proyecto</th>
+                            <th class="p-3 text-left">Cliente</th>
+                            <th class="p-3 text-left">Estado</th>
+                            <th class="p-3 text-left">Mi participación</th>
+                            <th class="p-3 text-left">Inicio</th>
+                            <th class="p-3 text-left">Fin</th>
+                            <th class="p-3 text-right">Acciones</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         @forelse($projects as $project)
+                            @php
+                                $myAssignment = $project->users->firstWhere('id', auth()->id());
+                                $myProjectRole = $myAssignment?->pivot?->project_role;
+                            @endphp
+
                             <tr class="border-t">
-                                <td class="p-3">{{ $project->name }}</td>
-                                <td class="p-3">{{ $project->client->name ?? '-' }}</td>
-                                <td class="p-3">{{ $project->client->company ?? '-' }}</td>
+                                <td class="p-3">
+                                    <div class="font-medium text-gray-900">{{ $project->name }}</div>
+                                    <div class="text-xs text-gray-500">
+                                        {{ $project->client->company ?: 'Sin empresa' }}
+                                    </div>
+                                </td>
+
+                                <td class="p-3 text-gray-700">
+                                    {{ $project->client->name ?? '-' }}
+                                </td>
+
                                 <td class="p-3">
                                     @if($project->status === 'active')
-                                        <span class="rounded-full bg-green-100 px-2 py-1 text-xs">active</span>
+                                        <span class="rounded-full bg-green-100 px-2 py-1 text-xs">activo</span>
                                     @elseif($project->status === 'paused')
-                                        <span class="rounded-full bg-yellow-100 px-2 py-1 text-xs">paused</span>
+                                        <span class="rounded-full bg-yellow-100 px-2 py-1 text-xs">pausado</span>
                                     @else
-                                        <span class="rounded-full bg-gray-100 px-2 py-1 text-xs">finished</span>
+                                        <span class="rounded-full bg-gray-100 px-2 py-1 text-xs">finalizado</span>
                                     @endif
                                 </td>
-                                <td class="p-3">{{ $project->start_date?->format('Y-m-d') ?? '-' }}</td>
-                                <td class="p-3">{{ $project->end_date?->format('Y-m-d') ?? '-' }}</td>
+
+                                <td class="p-3">
+                                    @if($myProjectRole)
+                                        @if($myProjectRole === 'manager')
+                                            <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                                                Manager
+                                            </span>
+                                        @else
+                                            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                                                {{ $projectRoleLabels[$myProjectRole] ?? $myProjectRole }}
+                                            </span>
+                                        @endif
+                                    @elseif($project->created_by === auth()->id())
+                                        <span class="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700">
+                                            Creador
+                                        </span>
+                                    @else
+                                        <span class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600">
+                                            Sin asignación
+                                        </span>
+                                    @endif
+                                </td>
+
+                                <td class="p-3 text-gray-700">
+                                    {{ $project->start_date?->format('Y-m-d') ?? '-' }}
+                                </td>
+
+                                <td class="p-3 text-gray-700">
+                                    {{ $project->end_date?->format('Y-m-d') ?? '-' }}
+                                </td>
 
                                 <td class="p-3 text-right space-x-2">
-                                    @can('projects.view')
-                                        <a class="underline" href="{{ route('projects.show', $project) }}">View</a>
-                                    @endcan
-
-                                    @can('projects.edit')
-                                        <a class="underline" href="{{ route('projects.edit', $project) }}">Edit</a>
-                                    @endcan
-
-                                   @can('projects.status.change')
-                                    @if($project->status === 'active')
-                                        <form class="inline" method="POST" action="{{ route('projects.pause', $project) }}">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button
-                                                class="underline text-yellow-700"
-                                                onclick="return confirm('Pause this project?')">
-                                                Pause
-                                            </button>
-                                        </form>
-
-                                        <form class="inline" method="POST" action="{{ route('projects.finish', $project) }}">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button
-                                                class="underline text-gray-700"
-                                                onclick="return confirm('Finish this project?')">
-                                                Finish
-                                            </button>
-                                        </form>
-                                    @elseif($project->status === 'paused')
-                                        <form class="inline" method="POST" action="{{ route('projects.activate', $project) }}">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button
-                                                class="underline text-green-700"
-                                                onclick="return confirm('Reactivate this project?')">
-                                                Reactivate
-                                            </button>
-                                        </form>
-
-                                        <form class="inline" method="POST" action="{{ route('projects.finish', $project) }}">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button
-                                                class="underline text-gray-700"
-                                                onclick="return confirm('Finish this project?')">
-                                                Finish
-                                            </button>
-                                        </form>
+                                    @if(auth()->user()->canViewProjectInstance($project))
+                                        <a class="underline text-gray-700 hover:text-black" href="{{ route('projects.show', $project) }}">
+                                            Ver
+                                        </a>
                                     @endif
-                                @endcan
+
+                                    @if(auth()->user()->canEditProjectInstance($project))
+                                        <a class="underline text-gray-700 hover:text-black" href="{{ route('projects.edit', $project) }}">
+                                            Editar
+                                        </a>
+                                    @endif
+
+                                    @if(auth()->user()->canChangeProjectStatusInstance($project))
+                                        @if($project->status === 'active')
+                                            <form class="inline" method="POST" action="{{ route('projects.pause', $project) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button
+                                                    class="underline text-yellow-700 hover:text-yellow-800"
+                                                    onclick="return confirm('¿Pausar este proyecto?')">
+                                                    Pausar
+                                                </button>
+                                            </form>
+
+                                            <form class="inline" method="POST" action="{{ route('projects.finish', $project) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button
+                                                    class="underline text-gray-700 hover:text-black"
+                                                    onclick="return confirm('¿Finalizar este proyecto?')">
+                                                    Finalizar
+                                                </button>
+                                            </form>
+                                        @elseif($project->status === 'paused')
+                                            <form class="inline" method="POST" action="{{ route('projects.activate', $project) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button
+                                                    class="underline text-green-700 hover:text-green-800"
+                                                    onclick="return confirm('¿Reactivar este proyecto?')">
+                                                    Reactivar
+                                                </button>
+                                            </form>
+
+                                            <form class="inline" method="POST" action="{{ route('projects.finish', $project) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button
+                                                    class="underline text-gray-700 hover:text-black"
+                                                    onclick="return confirm('¿Finalizar este proyecto?')">
+                                                    Finalizar
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="p-6 text-center text-gray-500">
-                                    No projects found.
+                                <td colspan="7" class="p-6 text-center text-gray-500">
+                                    No se han encontrado proyectos.
                                 </td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
 
-                <div class="p-4">
+                <div class="border-t p-4">
                     {{ $projects->links() }}
                 </div>
             </div>

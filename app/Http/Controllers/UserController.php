@@ -11,13 +11,47 @@ use Spatie\Permission\Models\Permission;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::query()
-            ->orderBy('name')
-            ->paginate(10);
+        abort_unless(Auth::user()?->can('users.view'), 403);
 
-        return view('users.index', compact('users'));
+        $search = trim((string) $request->query('search', ''));
+        $role = trim((string) $request->query('role', ''));
+        $department = trim((string) $request->query('department', ''));
+        $status = trim((string) $request->query('status', ''));
+
+        $users = User::query()
+            ->with('roles')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
+            })
+            ->when($department !== '', function ($query) use ($department) {
+                $query->where('department', $department);
+            })
+            ->when($status !== '', function ($query) use ($status) {
+                $query->where('is_active', $status === 'active');
+            })
+            ->when($role !== '', function ($query) use ($role) {
+                $query->whereHas('roles', function ($roleQuery) use ($role) {
+                    $roleQuery->where('name', $role);
+                });
+            })
+            ->orderBy('name')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('users.index', [
+            'users' => $users,
+            'search' => $search,
+            'role' => $role,
+            'department' => $department,
+            'status' => $status,
+            'departments' => User::DEPARTMENTS,
+            'roles' => ['superadmin', 'admin', 'senior', 'junior', 'intern'],
+        ]);
     }
 
     public function show(User $user)
