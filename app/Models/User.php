@@ -97,4 +97,11 @@ class User extends Authenticatable
     {
         return $this->hasMany(ProjectService::class, 'assigned_user_id');
     }
+
+    public function canManageProjectServicesInstance(Project $project): bool
+    {
+        return $this->hasProtectedGlobalRole()
+            || $this->can('project_services.manage')
+            || $this->hasProjectRole($project, 'manager');
+    }
 }

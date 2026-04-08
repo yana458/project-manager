@@ -15,7 +15,7 @@ class ProjectServiceController extends Controller
     {
         $actor = Auth::user();
 
-        if (! $actor || ! $actor->can('project_services.manage')) {
+        if (! $actor || ! $actor->canManageProjectServicesInstance($project)) {
             abort(403);
         }
 
@@ -68,7 +68,7 @@ class ProjectServiceController extends Controller
     {
         $actor = Auth::user();
 
-        if (! $actor || ! $actor->can('project_services.manage')) {
+        if (! $actor || ! $actor->canManageProjectServicesInstance($project)) {
             abort(403);
         }
 
@@ -109,7 +109,7 @@ class ProjectServiceController extends Controller
     {
         $actor = Auth::user();
 
-        if (! $actor || ! $actor->can('project_services.manage')) {
+        if (! $actor || ! $actor->canManageProjectServicesInstance($project)) {
             abort(403);
         }
 

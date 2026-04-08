@@ -8,6 +8,7 @@ use App\Http\Controllers\ProjectServiceController;
 use App\Http\Controllers\ProjectTeamController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -17,13 +18,7 @@ Route::get('/', function () {
 
 Route::middleware(['auth'])->group(function () {
 
-    Route::get('/dashboard', function () {
-        $user = Auth::user();
-        $role = $user->getRoleNames()->first();
-        $department = $user->department ?? 'development';
-
-        return view('dashboard', compact('role', 'department'));
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     /*
     |--------------------------------------------------------------------------

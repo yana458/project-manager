@@ -14,14 +14,17 @@ class ProjectController extends Controller
 {
     public function index(Request $request)
     {
-        $this->denyUnlessCan('projects.view');
+        $actor = Auth::user();
 
         $search = trim((string) $request->query('search', ''));
         $status = trim((string) $request->query('status', ''));
         $myOnly = $request->boolean('my_projects');
 
+        $hasGlobalProjectView = $actor->hasAnyRole(['superadmin', 'admin', 'senior'])
+            || $actor->can('projects.view');
+
         $projects = Project::query()
-            ->with('client')
+            ->with(['client', 'users'])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
@@ -32,9 +35,32 @@ class ProjectController extends Controller
                         });
                 });
             })
-            ->when($status !== '', fn ($query) => $query->where('status', $status))
-            ->when($myOnly, fn ($query) => $query->where('created_by', Auth::id()))
-            ->orderBy('name')
+            ->when($status !== '', function ($query) use ($status) {
+                $query->where('status', $status);
+            });
+
+        if ($hasGlobalProjectView) {
+            if ($myOnly) {
+                $projects->where(function ($query) use ($actor) {
+                    $query->where('created_by', $actor->id)
+                        ->orWhereHas('users', function ($userQuery) use ($actor) {
+                            $userQuery->where('users.id', $actor->id);
+                        });
+                });
+            }
+        } else {
+            $projects->where(function ($query) use ($actor) {
+                $query->where('created_by', $actor->id)
+                    ->orWhereHas('users', function ($userQuery) use ($actor) {
+                        $userQuery->where('users.id', $actor->id);
+                    });
+            });
+
+            $myOnly = true;
+        }
+
+        $projects = $projects
+            ->orderByDesc('id')
             ->paginate(10)
             ->withQueryString();
 
@@ -112,7 +138,7 @@ class ProjectController extends Controller
         $availableProjectServices = collect();
         $assignableServiceUsers = collect();
 
-        if ($actor->can('project_services.manage')) {
+        if ($actor->canManageProjectServicesInstance($project)) {
             $availableProjectServices = Service::query()
                 ->where('is_active', true)
                 ->whereHas('clients', function ($query) use ($project) {

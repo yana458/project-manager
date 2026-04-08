@@ -1,7 +1,12 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Usuarios</h2>
+            <div>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">Usuarios</h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    Gestión de usuarios internos, roles globales y estado de acceso.
+                </p>
+            </div>
 
             @can('users.create')
                 <a href="{{ route('users.create') }}" class="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white hover:bg-black">
@@ -25,13 +30,76 @@
                 </div>
             @endif
 
-            <div class="bg-white shadow rounded-xl overflow-hidden">
-                <div class="border-b bg-gray-50 px-4 py-3">
-                    <p class="text-sm text-gray-600">
-                        Gestión de usuarios internos, roles globales y estado de acceso.
-                    </p>
-                </div>
+            <div class="mb-4 rounded-xl bg-white p-4 shadow">
+                <form method="GET" action="{{ route('users.index') }}" class="space-y-3">
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
+                        <div class="md:col-span-2">
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Buscar</label>
+                            <input
+                                type="text"
+                                name="search"
+                                value="{{ $search }}"
+                                placeholder="Buscar por nombre o correo"
+                                class="w-full rounded-xl border-gray-200 bg-white"
+                            >
+                        </div>
 
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Rol</label>
+                            <select name="role" class="w-full rounded-xl border-gray-200 bg-white">
+                                <option value="">Todos los roles</option>
+                                @foreach($roles as $roleOption)
+                                    <option value="{{ $roleOption }}" @selected($role === $roleOption)>
+                                        {{ ucfirst($roleOption) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Departamento</label>
+                            <select name="department" class="w-full rounded-xl border-gray-200 bg-white">
+                                <option value="">Todos los departamentos</option>
+                                @foreach($departments as $dep)
+                                    <option value="{{ $dep }}" @selected($department === $dep)>
+                                        {{ ucfirst($dep) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Estado</label>
+                            <select name="status" class="w-full rounded-xl border-gray-200 bg-white">
+                                <option value="">Todos los estados</option>
+                                <option value="active" @selected($status === 'active')>Activo</option>
+                                <option value="inactive" @selected($status === 'inactive')>Inactivo</option>
+                            </select>
+                        </div>
+
+                        <div class="md:col-span-2 flex items-end justify-between gap-2">
+                            <div class="text-sm text-gray-500">
+                                {{ $users->total() }} usuario{{ $users->total() === 1 ? '' : 's' }} encontrado{{ $users->total() === 1 ? '' : 's' }}
+                            </div>
+
+                            <div class="flex gap-2">
+                                <a href="{{ route('users.index') }}"
+                                   class="rounded-xl border px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                    Limpiar filtros
+                                </a>
+
+                                <button class="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white hover:bg-black">
+                                    Buscar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="bg-white shadow rounded-xl overflow-hidden">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 text-gray-600">
                         <tr>
@@ -107,7 +175,7 @@
                         @empty
                             <tr class="border-t">
                                 <td colspan="6" class="p-6 text-center text-sm text-gray-500">
-                                    No hay usuarios registrados.
+                                    No se han encontrado usuarios.
                                 </td>
                             </tr>
                         @endforelse

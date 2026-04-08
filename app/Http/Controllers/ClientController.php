@@ -6,28 +6,58 @@ use App\Models\Client;
 use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class ClientController extends Controller
 {
-    public function index(Request $request)
+   public function index(Request $request)
     {
+        abort_unless(Auth::user()?->can('clients.view'), 403);
+
         $search = trim((string) $request->query('search', ''));
+        $status = trim((string) $request->query('status', ''));
+        $projectsFilter = trim((string) $request->query('projects', ''));
+        $servicesFilter = trim((string) $request->query('services', ''));
 
         $clients = Client::query()
+            ->withCount(['projects', 'services'])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
                         ->orWhere('company', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
                         ->orWhere('tax_id', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%");
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('whatsapp', 'like', "%{$search}%")
+                        ->orWhere('website_url', 'like', "%{$search}%");
                 });
+            })
+            ->when($status !== '', function ($query) use ($status) {
+                $query->where('is_active', $status === 'active');
+            })
+            ->when($projectsFilter === 'with', function ($query) {
+                $query->has('projects');
+            })
+            ->when($projectsFilter === 'without', function ($query) {
+                $query->doesntHave('projects');
+            })
+            ->when($servicesFilter === 'with', function ($query) {
+                $query->has('services');
+            })
+            ->when($servicesFilter === 'without', function ($query) {
+                $query->doesntHave('services');
             })
             ->orderBy('name')
             ->paginate(10)
             ->withQueryString();
 
-        return view('clients.index', compact('clients', 'search'));
+        return view('clients.index', [
+            'clients' => $clients,
+            'search' => $search,
+            'status' => $status,
+            'projectsFilter' => $projectsFilter,
+            'servicesFilter' => $servicesFilter,
+        ]);
     }
 
     public function create()
