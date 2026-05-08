@@ -158,10 +158,6 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('permission:services.view')
             ->name('index');
 
-        Route::get('/{service}', [ServiceController::class, 'show'])
-            ->middleware('permission:services.view')
-            ->name('show');
-
         Route::get('/create', [ServiceController::class, 'create'])
             ->middleware('permission:services.create')
             ->name('create');
@@ -169,6 +165,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/', [ServiceController::class, 'store'])
             ->middleware('permission:services.create')
             ->name('store');
+
+        Route::get('/{service}', [ServiceController::class, 'show'])
+            ->middleware('permission:services.view')
+            ->name('show');
 
         Route::get('/{service}/edit', [ServiceController::class, 'edit'])
             ->middleware('permission:services.edit')

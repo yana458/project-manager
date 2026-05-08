@@ -1,82 +1,94 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Edit service</h2>
-            <a href="{{ route('services.show', $service) }}" class="text-center rounded-xl bg-gray-900 px-4 py-2 text-sm text-white">Back</a>
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Editar servicio</h2>
+            <a href="{{ route('services.show', $service) }}" class="text-center rounded-xl bg-gray-900 px-4 py-2 text-sm text-white">
+                Volver
+            </a>
         </div>
     </x-slot>
 
     <div class="py-6">
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white shadow rounded-xl p-6">
+                <div class="mb-6 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
+                    Modifica la información del servicio dentro del catálogo general.
+                </div>
+
                 <form method="POST" action="{{ route('services.update', $service) }}" class="space-y-4">
                     @csrf
                     @method('PATCH')
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Name</label>
+                        <label class="block text-sm font-medium text-gray-700">Nombre</label>
                         <input
                             name="name"
                             value="{{ old('name', $service->name) }}"
                             class="mt-1 w-full rounded-xl border-gray-200 bg-white"
                             required
                         >
-                        @error('name') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+                        @error('name')
+                            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Category</label>
-                        <input
+                        <label class="block text-sm font-medium text-gray-700">Categoría</label>
+                        <select
                             name="category"
-                            value="{{ old('category', $service->category) }}"
-                            list="categories-list"
                             class="mt-1 w-full rounded-xl border-gray-200 bg-white"
-                            placeholder="Select or type a category"
                         >
-                        <datalist id="categories-list">
+                            <option value="">Selecciona una categoría</option>
                             @foreach($categories as $cat)
-                                <option value="{{ $cat }}">
+                                <option value="{{ $cat }}" @selected(old('category', $service->category) === $cat)>
+                                    {{ $cat }}
+                                </option>
                             @endforeach
-                        </datalist>
-                        @error('category') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+                        </select>
+                        @error('category')
+                            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700">
-                            Subcategory <span class="text-gray-400 font-normal">(optional)</span>
+                            Subcategoría <span class="text-gray-400 font-normal">(opcional)</span>
                         </label>
-                        <input
+                        <select
                             name="sub_category"
-                            value="{{ old('sub_category', $service->sub_category) }}"
-                            list="subcategories-list"
                             class="mt-1 w-full rounded-xl border-gray-200 bg-white"
-                            placeholder="Select or type a subcategory"
                         >
-                        <datalist id="subcategories-list">
+                            <option value="">Selecciona una subcategoría</option>
                             @foreach($subCategories as $sub)
-                                <option value="{{ $sub }}">
+                                <option value="{{ $sub }}" @selected(old('sub_category', $service->sub_category) === $sub)>
+                                    {{ $sub }}
+                                </option>
                             @endforeach
-                        </datalist>
-                        @error('sub_category') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+                        </select>
+                        @error('sub_category')
+                            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Description</label>
+                        <label class="block text-sm font-medium text-gray-700">Descripción</label>
                         <textarea
                             name="description"
                             rows="4"
                             class="mt-1 w-full rounded-xl border-gray-200 bg-white"
-                            placeholder="Optional description..."
+                            placeholder="Descripción opcional..."
                         >{{ old('description', $service->description) }}</textarea>
-                        @error('description') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+                        @error('description')
+                            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="pt-2 flex gap-2">
                         <button class="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white">
-                            Save
+                            Guardar cambios
                         </button>
                         <a href="{{ route('services.show', $service) }}" class="rounded-xl px-4 py-2 text-sm border">
-                            Cancel
+                            Cancelar
                         </a>
                     </div>
                 </form>
