@@ -1,11 +1,16 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Services</h2>
+            <div>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">Servicios</h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    Consulta el catálogo de servicios, su estado y su uso en clientes y proyectos.
+                </p>
+            </div>
 
             @can('services.create')
-                <a href="{{ route('services.create') }}" class="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white">
-                    Create service
+                <a href="{{ route('services.create') }}" class="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white hover:bg-black">
+                    Crear servicio
                 </a>
             @endcan
         </div>
@@ -26,82 +31,143 @@
                 </div>
             @endif
 
-            {{-- Filters --}}
-            <form method="GET" action="{{ route('services.index') }}" class="mb-4 flex flex-wrap gap-2">
-                <input
-                    type="text"
-                    name="search"
-                    value="{{ request('search') }}"
-                    placeholder="Search by name..."
-                    class="rounded-xl border-gray-200 text-sm px-3 py-2"
-                >
+            <div class="mb-4 rounded-xl bg-white p-4 shadow">
+                <form method="GET" action="{{ route('services.index') }}" class="space-y-3">
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
+                        <div class="md:col-span-2">
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Buscar</label>
+                            <input
+                                type="text"
+                                name="search"
+                                value="{{ $search }}"
+                                placeholder="Buscar por nombre o descripción"
+                                class="w-full rounded-xl border-gray-200 bg-white"
+                            >
+                        </div>
 
-                <select name="category" class="rounded-xl border-gray-200 text-sm px-3 py-2">
-                    <option value="">All categories</option>
-                    @foreach($categories as $cat)
-                        <option value="{{ $cat }}" @selected(request('category') === $cat)>
-                            {{ $cat }}
-                        </option>
-                    @endforeach
-                </select>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Categoría</label>
+                            <select name="category" class="w-full rounded-xl border-gray-200 bg-white">
+                                <option value="">Todas las categorías</option>
+                                @foreach($categories as $cat)
+                                    <option value="{{ $cat }}" @selected($category === $cat)>
+                                        {{ $cat }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                <select name="sub_category" class="rounded-xl border-gray-200 text-sm px-3 py-2">
-                    <option value="">All subcategories</option>
-                    @foreach($subCategories as $sub)
-                        <option value="{{ $sub }}" @selected(request('sub_category') === $sub)>
-                            {{ $sub }}
-                        </option>
-                    @endforeach
-                </select>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Subcategoría</label>
+                            <select name="sub_category" class="w-full rounded-xl border-gray-200 bg-white">
+                                <option value="">Todas las subcategorías</option>
+                                @foreach($subCategories as $sub)
+                                    <option value="{{ $sub }}" @selected($subCategory === $sub)>
+                                        {{ $sub }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
 
-                <select name="is_active" class="rounded-xl border-gray-200 text-sm px-3 py-2">
-                    <option value="">All statuses</option>
-                    <option value="1" @selected(request('is_active') === '1')>Active</option>
-                    <option value="0" @selected(request('is_active') === '0')>Inactive</option>
-                </select>
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Estado</label>
+                            <select name="is_active" class="w-full rounded-xl border-gray-200 bg-white">
+                                <option value="">Todos los estados</option>
+                                <option value="1" @selected($status === '1')>Activo</option>
+                                <option value="0" @selected($status === '0')>Inactivo</option>
+                            </select>
+                        </div>
 
-                <button type="submit" class="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white">
-                    Filter
-                </button>
+                        <div class="md:col-span-2 flex items-end justify-between gap-2">
+                            <div class="text-sm text-gray-500">
+                                {{ $services->total() }} servicio{{ $services->total() === 1 ? '' : 's' }} encontrado{{ $services->total() === 1 ? '' : 's' }}
+                            </div>
 
-                @if(request()->hasAny(['search', 'category', 'sub_category', 'is_active']))
-                    <a href="{{ route('services.index') }}" class="rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-600">
-                        Clear
-                    </a>
-                @endif
-            </form>
+                            <div class="flex gap-2">
+                                <a href="{{ route('services.index') }}"
+                                   class="rounded-xl border px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                    Limpiar filtros
+                                </a>
 
-            <div class="bg-white shadow rounded-xl overflow-hidden">
+                                <button type="submit" class="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white hover:bg-black">
+                                    Buscar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="overflow-hidden rounded-xl bg-white shadow">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 text-gray-600">
                         <tr>
-                            <th class="text-left p-3">Name</th>
-                            <th class="text-left p-3">Category</th>
-                            <th class="text-left p-3">Subcategory</th>
-                            <th class="text-left p-3">Status</th>
-                            <th class="text-right p-3">Actions</th>
+                            <th class="text-left p-3">Servicio</th>
+                            <th class="text-left p-3">Categoría</th>
+                            <th class="text-left p-3">Subcategoría</th>
+                            <th class="text-left p-3">Actividad</th>
+                            <th class="text-left p-3">Estado</th>
+                            <th class="text-right p-3">Acciones</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         @forelse($services as $service)
                             <tr class="border-t">
-                                <td class="p-3">{{ $service->name }}</td>
-                                <td class="p-3">{{ $service->category ?? '—' }}</td>
-                                <td class="p-3">{{ $service->sub_category ?? '—' }}</td>
+                                <td class="p-3">
+                                    <div class="font-medium text-gray-900">{{ $service->name }}</div>
+                                    <div class="text-xs text-gray-500">
+                                        {{ $service->description ?: 'Sin descripción' }}
+                                    </div>
+                                </td>
+
+                                <td class="p-3 text-gray-700">
+                                    {{ $service->category ?: '—' }}
+                                </td>
+
+                                <td class="p-3 text-gray-700">
+                                    {{ $service->sub_category ?: '—' }}
+                                </td>
+
+                                <td class="p-3">
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700">
+                                            {{ $service->clients_count }} cliente{{ $service->clients_count === 1 ? '' : 's' }}
+                                        </span>
+
+                                        <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                                            {{ $service->projects_count }} proyecto{{ $service->projects_count === 1 ? '' : 's' }}
+                                        </span>
+
+                                        @if($service->clients_count === 0 && $service->projects_count === 0)
+                                            <span class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600">
+                                                Sin uso
+                                            </span>
+                                        @endif
+                                    </div>
+                                </td>
+
                                 <td class="p-3">
                                     @if($service->is_active)
-                                        <span class="rounded-full bg-green-100 px-2 py-1 text-xs">Active</span>
+                                        <span class="rounded-full bg-green-100 px-2 py-1 text-xs">activo</span>
                                     @else
-                                        <span class="rounded-full bg-gray-100 px-2 py-1 text-xs">Inactive</span>
+                                        <span class="rounded-full bg-gray-100 px-2 py-1 text-xs">inactivo</span>
                                     @endif
                                 </td>
 
                                 <td class="p-3 text-right space-x-2">
-                                    <a class="underline" href="{{ route('services.show', $service) }}">View</a>
+                                    @can('services.view')
+                                        <a class="underline text-gray-700 hover:text-black" href="{{ route('services.show', $service) }}">
+                                            Ver
+                                        </a>
+                                    @endcan
 
                                     @can('services.edit')
-                                        <a class="underline" href="{{ route('services.edit', $service) }}">Edit</a>
+                                        <a class="underline text-gray-700 hover:text-black" href="{{ route('services.edit', $service) }}">
+                                            Editar
+                                        </a>
                                     @endcan
 
                                     @can('services.deactivate')
@@ -110,9 +176,9 @@
                                                 @csrf
                                                 @method('DELETE')
                                                 <button
-                                                    class="underline text-red-700"
-                                                    onclick="return confirm('Deactivate this service?')">
-                                                    Deactivate
+                                                    class="underline text-red-700 hover:text-red-800"
+                                                    onclick="return confirm('¿Desactivar este servicio?')">
+                                                    Desactivar
                                                 </button>
                                             </form>
                                         @else
@@ -120,9 +186,9 @@
                                                 @csrf
                                                 @method('PATCH')
                                                 <button
-                                                    class="underline text-green-700"
-                                                    onclick="return confirm('Activate this service?')">
-                                                    Activate
+                                                    class="underline text-green-700 hover:text-green-800"
+                                                    onclick="return confirm('¿Activar este servicio?')">
+                                                    Activar
                                                 </button>
                                             </form>
                                         @endif
@@ -131,15 +197,15 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="p-6 text-center text-gray-400 text-sm">
-                                    No services found.
+                                <td colspan="6" class="p-6 text-center text-gray-400 text-sm">
+                                    No se han encontrado servicios.
                                 </td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
 
-                <div class="p-4">
+                <div class="p-4 border-t">
                     {{ $services->links() }}
                 </div>
             </div>

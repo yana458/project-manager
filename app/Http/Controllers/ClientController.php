@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use App\Models\Service;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class ClientController extends Controller
 {
-   public function index(Request $request)
+    public function index(Request $request)
     {
         abort_unless(Auth::user()?->can('clients.view'), 403);
 
@@ -62,23 +63,39 @@ class ClientController extends Controller
 
     public function create()
     {
-        return view('clients.create');
+        abort_unless(Auth::user()?->can('clients.create'), 403);
+
+        $servicesCatalog = Service::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('clients.create', [
+            'servicesCatalog' => $servicesCatalog,
+        ]);
     }
 
     public function store(Request $request)
     {
+        abort_unless(Auth::user()?->can('clients.create'), 403);
+
         $validated = $this->validateClient($request);
 
-        Client::create($this->buildClientData($validated));
+        $client = Client::create($this->buildClientData($validated));
+
+        $client->services()->sync($validated['service_ids'] ?? []);
 
         return redirect()
             ->route('clients.index')
-            ->with('success', 'Client created.');
+            ->with('success', 'Cliente creado correctamente.');
     }
 
     public function show(Client $client)
     {
+        abort_unless(Auth::user()?->can('clients.view'), 403);
+
         $client->load([
+            'projects' => fn ($query) => $query->orderByDesc('id'),
             'services' => fn ($query) => $query->orderBy('name'),
         ]);
 
@@ -98,46 +115,71 @@ class ClientController extends Controller
 
     public function edit(Client $client)
     {
-        return view('clients.edit', compact('client'));
+        abort_unless(Auth::user()?->can('clients.edit'), 403);
+
+        $client->load('services');
+
+        $servicesCatalog = Service::query()
+            ->where(function ($query) use ($client) {
+                $query->where('is_active', true)
+                    ->orWhereHas('clients', function ($clientQuery) use ($client) {
+                        $clientQuery->where('clients.id', $client->id);
+                    });
+            })
+            ->orderBy('name')
+            ->get();
+
+        return view('clients.edit', [
+            'client' => $client,
+            'servicesCatalog' => $servicesCatalog,
+        ]);
     }
 
     public function update(Request $request, Client $client)
     {
+        abort_unless(Auth::user()?->can('clients.edit'), 403);
+
         $validated = $this->validateClient($request, $client);
 
         $client->update($this->buildClientData($validated));
 
+        $client->services()->sync($validated['service_ids'] ?? []);
+
         return redirect()
             ->route('clients.show', $client)
-            ->with('success', 'Client updated.');
+            ->with('success', 'Cliente actualizado correctamente.');
     }
 
     public function deactivate(Client $client)
     {
-        if (!$client->is_active) {
-            return back()->with('success', 'Client is already inactive.');
+        abort_unless(Auth::user()?->can('clients.deactivate'), 403);
+
+        if (! $client->is_active) {
+            return back()->with('success', 'El cliente ya estaba inactivo.');
         }
 
         $client->update(['is_active' => false]);
 
-        return back()->with('success', 'Client deactivated.');
+        return back()->with('success', 'Cliente desactivado correctamente.');
     }
 
     public function activate(Client $client)
     {
+        abort_unless(Auth::user()?->can('clients.deactivate'), 403);
+
         if ($client->is_active) {
-            return back()->with('success', 'Client is already active.');
+            return back()->with('success', 'El cliente ya estaba activo.');
         }
 
         $client->update(['is_active' => true]);
 
-        return back()->with('success', 'Client activated.');
+        return back()->with('success', 'Cliente activado correctamente.');
     }
 
     private function validateClient(Request $request, ?Client $client = null): array
     {
         $this->normalizeUrlInputs($request);
-        
+
         $clientId = $client?->id;
 
         return $request->validate([
@@ -159,11 +201,20 @@ class ClientController extends Controller
             ],
             'whatsapp' => ['nullable', 'string', 'max:50'],
             'website_url' => ['nullable', 'url', 'max:255'],
+
             'instagram' => ['nullable', 'url', 'max:255'],
             'facebook' => ['nullable', 'url', 'max:255'],
             'linkedin' => ['nullable', 'url', 'max:255'],
             'tiktok' => ['nullable', 'url', 'max:255'],
             'x' => ['nullable', 'url', 'max:255'],
+
+            'custom_socials' => ['nullable', 'array'],
+            'custom_socials.*.name' => ['nullable', 'string', 'max:100'],
+            'custom_socials.*.url' => ['nullable', 'url', 'max:255'],
+
+            'service_ids' => ['nullable', 'array'],
+            'service_ids.*' => ['integer', 'exists:services,id'],
+
             'notes' => ['nullable', 'string'],
         ]);
     }
@@ -179,16 +230,33 @@ class ClientController extends Controller
             'tax_id' => $validated['tax_id'],
             'whatsapp' => $validated['whatsapp'] ?? null,
             'website_url' => $validated['website_url'] ?? null,
-            'social_links' => array_filter([
-                'instagram' => $validated['instagram'] ?? null,
-                'facebook' => $validated['facebook'] ?? null,
-                'linkedin' => $validated['linkedin'] ?? null,
-                'tiktok' => $validated['tiktok'] ?? null,
-                'x' => $validated['x'] ?? null,
-            ]),
+            'social_links' => $this->buildSocialLinks($validated),
             'notes' => $validated['notes'] ?? null,
-            'is_active' => true,
+            'is_active' => $validated['is_active'] ?? true,
         ];
+    }
+
+    private function buildSocialLinks(array $validated): array
+    {
+        $socialLinks = array_filter([
+            'instagram' => $validated['instagram'] ?? null,
+            'facebook' => $validated['facebook'] ?? null,
+            'linkedin' => $validated['linkedin'] ?? null,
+            'tiktok' => $validated['tiktok'] ?? null,
+            'x' => $validated['x'] ?? null,
+        ], fn ($value) => filled($value));
+
+        foreach ($validated['custom_socials'] ?? [] as $customSocial) {
+            $name = trim((string) ($customSocial['name'] ?? ''));
+            $url = trim((string) ($customSocial['url'] ?? ''));
+
+            if ($name !== '' && $url !== '') {
+                $key = Str::slug($name, '_');
+                $socialLinks[$key] = $url;
+            }
+        }
+
+        return $socialLinks;
     }
 
     private function normalizeUrlInputs(Request $request): void
@@ -209,7 +277,7 @@ class ClientController extends Controller
                 continue;
             }
 
-            if (!preg_match('~^https?://~i', $value)) {
+            if (! preg_match('~^https?://~i', $value)) {
                 $value = 'https://' . ltrim($value, '/');
             }
 
@@ -217,5 +285,25 @@ class ClientController extends Controller
                 $field => $value,
             ]);
         }
+
+        $customSocials = $request->input('custom_socials', []);
+
+        foreach ($customSocials as $index => $customSocial) {
+            $url = trim((string) ($customSocial['url'] ?? ''));
+
+            if ($url === '') {
+                continue;
+            }
+
+            if (! preg_match('~^https?://~i', $url)) {
+                $url = 'https://' . ltrim($url, '/');
+            }
+
+            $customSocials[$index]['url'] = $url;
+        }
+
+        $request->merge([
+            'custom_socials' => $customSocials,
+        ]);
     }
 }

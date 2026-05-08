@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\ProjectService;
-use App\Models\Service;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -15,7 +15,11 @@ class ProjectServiceController extends Controller
     {
         $actor = Auth::user();
 
-        if (! $actor || ! $actor->canManageProjectServicesInstance($project)) {
+        if (! $actor instanceof User) {
+            abort(403);
+        }
+
+        if (! $actor->canManageProjectServicesInstance($project)) {
             abort(403);
         }
 
@@ -40,7 +44,7 @@ class ProjectServiceController extends Controller
             ->exists();
 
         if (! $serviceAllowed) {
-            return back()->with('error', 'This service is not contracted by the client.');
+            return back()->with('error', 'Este servicio no está contratado por el cliente.');
         }
 
         if (! empty($validated['assigned_user_id'])) {
@@ -49,7 +53,7 @@ class ProjectServiceController extends Controller
                 ->exists();
 
             if (! $userAssignedToProject) {
-                return back()->with('error', 'Assigned user must belong to the project team.');
+                return back()->with('error', 'El responsable debe pertenecer al equipo del proyecto.');
             }
         }
 
@@ -61,14 +65,18 @@ class ProjectServiceController extends Controller
             'assigned_user_id' => $validated['assigned_user_id'] ?? null,
         ]);
 
-        return back()->with('success', 'Service added to project.');
+        return back()->with('success', 'Servicio añadido al proyecto correctamente.');
     }
 
     public function update(Request $request, Project $project, ProjectService $projectService)
     {
         $actor = Auth::user();
 
-        if (! $actor || ! $actor->canManageProjectServicesInstance($project)) {
+        if (! $actor instanceof User) {
+            abort(403);
+        }
+
+        if (! $actor->canManageProjectServicesInstance($project)) {
             abort(403);
         }
 
@@ -90,7 +98,7 @@ class ProjectServiceController extends Controller
                 ->exists();
 
             if (! $userAssignedToProject) {
-                return back()->with('error', 'Assigned user must belong to the project team.');
+                return back()->with('error', 'El responsable debe pertenecer al equipo del proyecto.');
             }
         }
 
@@ -102,14 +110,18 @@ class ProjectServiceController extends Controller
             'assigned_user_id' => $validated['assigned_user_id'] ?? null,
         ]);
 
-        return back()->with('success', 'Project service updated.');
+        return back()->with('success', 'Servicio del proyecto actualizado correctamente.');
     }
 
     public function destroy(Project $project, ProjectService $projectService)
     {
         $actor = Auth::user();
 
-        if (! $actor || ! $actor->canManageProjectServicesInstance($project)) {
+        if (! $actor instanceof User) {
+            abort(403);
+        }
+
+        if (! $actor->canManageProjectServicesInstance($project)) {
             abort(403);
         }
 
@@ -117,8 +129,8 @@ class ProjectServiceController extends Controller
             abort(404);
         }
 
-        $projectService->delete();
+        $project->services()->detach($projectService->service_id);
 
-        return back()->with('success', 'Service removed from project.');
+        return back()->with('success', 'Servicio eliminado del proyecto correctamente.');
     }
 }
